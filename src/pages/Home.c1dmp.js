@@ -8,6 +8,7 @@
 
 
 // Jake might not suck so much if this ends up working
+//Make sure tania didnt mess this up (test)
 
 //initializing the map and setting its view
 const map = L.map('map').setView([51.505, -0.09], 13); // Latitude, Longitude, Zoom level
