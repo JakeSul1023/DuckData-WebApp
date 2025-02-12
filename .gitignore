@@ -5,3 +5,4 @@ node_modules/
 .wix/
 jsconfig.json
 package-lock.json
+src/map_code/deckgl-map-demo/public/WaterfowlData.csv
