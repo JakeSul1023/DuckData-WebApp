@@ -9,7 +9,7 @@ How This Repo Fits into Team-7_Waterfowl
 
     This repository focuses on the frontend and data visualization aspects
     The Team-7_Waterfowl repo contains the machine learning model and data processing pipeline
-    The frontend will eventually integrate with the ML-generated CSV to display migration     predictions
+    The frontend will eventually integrate with the ML-generated CSV to display migration predictions
 
 Current Features
 
