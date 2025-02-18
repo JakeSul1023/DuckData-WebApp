@@ -1,45 +1,38 @@
-# Git Integration & Wix CLI <img align="left" src="https://user-images.githubusercontent.com/89579857/185785022-cab37bf5-26be-4f11-85f0-1fac63c07d3b.png">
+🦆 Waterfowl Migration Prediction System (Duck Data)
 
-This repo is part of Git Integration & Wix CLI, a set of tools that allows you to write, test, and publish code for your Wix site locally on your computer. 
+Overview
+his repository is part of the Team-7_Waterfowl project and focuses primarily on frontend visualization for waterfowl migration patterns across the Mississippi Flyway. It integrates with the main repository (Team-7_Waterfowl), which handles machine learning predictions and data processing.
 
-Connect your site to GitHub, develop in your favorite IDE, test your code in real time, and publish your site from the command line.
+The frontend uses deck.gl and OpenStreetMap to render an interactive heatmap based on historical migration data from the TTU Wildlife Department. The ultimate goal is to visualize predicted migration patterns up to 10 days in advance, using real-time NOAA weather data.
 
-## Set up this repository in your IDE
-This repo is connected to a Wix site. That site tracks this repo's default branch. Any code committed and pushed to that branch from your local IDE appears on the site.
+How This Repo Fits into Team-7_Waterfowl
 
-Before getting started, make sure you have the following things installed:
-* [Git](https://git-scm.com/download)
-* [Node](https://nodejs.org/en/download/), version 14.8 or later.
-* [npm](https://docs.npmjs.com/downloading-and-installing-node-js-and-npm) or [yarn](https://yarnpkg.com/getting-started/install)
-* An SSH key [added to your GitHub account](https://docs.github.com/en/authentication/connecting-to-github-with-ssh/adding-a-new-ssh-key-to-your-github-account).
+    This repository focuses on the frontend and data visualization aspects
+    The Team-7_Waterfowl repo contains the machine learning model and data processing pipeline
+    The frontend will eventually integrate with the ML-generated CSV to display migration predictions
 
-To set up your local environment and start coding locally, do the following:
+Current Features
 
-1. Open your terminal and navigate to where you want to store the repo.
-1. Clone the repo by running `git clone <your-repository-url>`.
-1. Navigate to the repo's directory by running `cd <directory-name>`.
-1. Install the repo's dependencies by running `npm install` or `yarn install`.
-1. Install the Wix CLI by running `npm install -g @wix/cli` or `yarn global add @wix/cli`.  
-   Once you've installed the CLI globally, you can use it with any Wix site's repo.
+    ✅ Historical Data Heatmap – Uses deck.gl to display past waterfowl migration patterns
+    ✅ OpenStreetMap Tile Integration – Provides a detailed map for visualization
+    ✅ CSV Data Handling – Reads and processes static migration data for display
 
-For more information, see [Setting up Git Integration & Wix CLI](https://support.wix.com/en/article/velo-setting-up-git-integration-wix-cli-beta).
+Upcoming Features
 
-## Write Velo code in your IDE
-Once your repo is set up, you can write code in it as you would in any other non-Wix project. The repo's file structure matches the [public](https://support.wix.com/en/article/velo-working-with-the-velo-sidebar#public), [backend](https://support.wix.com/en/article/velo-working-with-the-velo-sidebar#backend), and [page code](https://support.wix.com/en/article/velo-working-with-the-velo-sidebar#page-code) sections in Editor X.
+    🚀 Machine Learning Model – A predictive model will be developed to forecast migration patterns up to 10 days in advance
+    🌦 Weather Data Integration – NOAA weather data will be used as a key factor in migration predictions
+    📊 Time-Slider Feature – Allows users to step through historical migration data over time
+    🖥 High-Performance Computing (HPC) – The ML model will be optimized and run on TTU’s HPC system for large-scale predictions
+    
+How It Will Work
 
-Learn more about [this repo's file structure](https://support.wix.com/en/article/velo-understanding-your-sites-github-repository-beta).
+    1️⃣ Historical Data Processing – Migration records from TTU Wildlife Department will be preprocessed
+    2️⃣ Weather-Based Predictions – The ML model will predict duck movements based on current weather conditions
+    3️⃣ Heatmap Visualization – The React frontend will display past and predicted migrations as a heatmap
+    4️⃣ CSV Output – The system will generate a predicted migration dataset for further use
+    
+Project Details
 
-## Test your code with the Local Editor
-The Local Editor allows you test changes made to your site in real time. The code in your local IDE is synced with the Local Editor, so you can test your changes before committing them to your repo. You can also change the site design in the Local Editor and sync it with your IDE.
-
-Start the Local Editor by navigating to this repo's directory in your terminal and running `wix dev`.
-
-For more information, see [Working with the Local Editor](https://support.wix.com/en/article/velo-working-with-the-local-editor-beta).
-
-## Preview and publish with the Wix CLI
-The Wix CLI is a tool that allows you to work with your site locally from your computer's terminal. You can use it to build a preview version of your site and publish it. You can also use the CLI to install [approved npm packages](https://support.wix.com/en/article/velo-working-with-npm-packages) to your site.
-
-Learn more about [working with the Wix CLI](https://support.wix.com/en/article/velo-working-with-the-wix-cli-beta).
-
-## Invite contributors to work with you
-Git Integration & Wix CLI extends Editor X's [concurrent editing](https://support.wix.com/en/article/editor-x-about-concurrent-editing) capabilities. Invite other developers as collaborators on your [site](https://support.wix.com/en/article/inviting-people-to-contribute-to-your-site) and your [GitHub repo](https://docs.github.com/en/account-and-profile/setting-up-and-managing-your-personal-account-on-github/managing-access-to-your-personal-repositories/inviting-collaborators-to-a-personal-repository). Multiple developers can work on a site's code at once.
+    Client: Dr. Cohen, TTU Wildlife Department
+    Data Sources: TTU Wildlife Department (Migration Data), NOAA (Weather Data)
+    Tech Stack: React, Deck.gl, OpenStreetMap, Python (ML), R (Data Processing), HPC
