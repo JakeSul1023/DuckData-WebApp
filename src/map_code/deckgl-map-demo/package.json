@@ -8,6 +8,7 @@
     "@deck.gl/geo-layers": "^9.1.1",
     "@deck.gl/react": "^9.1.1",
     "cra-template": "1.2.0",
+    "rc-slider": "^11.1.8",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "react-scripts": "5.0.1",
