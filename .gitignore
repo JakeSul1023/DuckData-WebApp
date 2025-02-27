@@ -6,3 +6,4 @@ node_modules/
 jsconfig.json
 package-lock.json
 src/map_code/deckgl-map-demo/public/WaterfowlData.csv
+src/map_code/deckgl-map-demo/package.json
