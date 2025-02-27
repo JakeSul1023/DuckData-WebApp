@@ -31,8 +31,7 @@ export default function DuckDailyPresence() {
   useEffect(() => {
     let isMounted = true;
 
-    fetch("/WaterdowlData1.csv")
-      .then((res) => res.text())
+    fetch(`${process.env.PUBLIC_URL}/WaterdowlData1.csv`)      .then((res) => res.text())
       .then((csvText) => {
         if (!isMounted) return;
 
