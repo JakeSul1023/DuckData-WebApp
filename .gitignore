@@ -1,0 +1,10 @@
+# dependencies
+node_modules/
+.vscode/
+.idea/
+.wix/
+jsconfig.json
+package-lock.json
+src/map_code/deckgl-map-demo/public/WaterfowlData.csv
+src/map_code/deckgl-map-demo/package.json
+src/map_code/deckgl-map-demo/package.json
