@@ -1,3 +1,11 @@
+/*
+    Author: Jacob Sullivan 
+    Status: Unfinished
+    About: This file includes the code to locally host a map that involves Deck.gl and OpenStreetMaps (OSM). 
+    It currently shows the map of the globe with a visualization of the data in a heat format of historical data provided by
+    movebank and it as of now is a static set of data and the goal as of now is to implement a time slider to see
+    the motion of the ducks over time
+*/
 import React, { useState, useEffect, useRef } from "react";
 import { DeckGL } from "@deck.gl/react";
 import { TileLayer } from "@deck.gl/geo-layers";
