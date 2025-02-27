@@ -43,6 +43,8 @@
       "last 1 safari version"
     ]
   },
+  "homepage": "https://JakeSul1023.github.io/DuckData-WebApp",
+  
   "devDependencies": {
     "gh-pages": "^6.3.0"
   }
