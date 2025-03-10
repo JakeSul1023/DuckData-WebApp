@@ -1,17 +1,10 @@
-/*
-    Author: Jacob Sullivan 
-    Status: Unfinished
-    About: This file includes the code to locally host a map that involves Deck.gl and OpenStreetMaps (OSM). 
-    It currently shows the map of the globe with a visualization of the data in a heat format of historical data provided by
-    movebank and it as of now is a static set of data and the goal as of now is to implement a time slider to see
-    the motion of the ducks over time
-*/
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useMemo } from "react";
 import { DeckGL } from "@deck.gl/react";
 import { TileLayer } from "@deck.gl/geo-layers";
 import { BitmapLayer, ScatterplotLayer } from "@deck.gl/layers";
 import { Slider } from "@mui/material";
 
+// Initial view 
 const INITIAL_VIEW = {
   latitude: 36.28,
   longitude: -89.42,
@@ -22,58 +15,74 @@ const INITIAL_VIEW = {
   bearing: 0,
 };
 
-// returns a jittered coordinate.
-function jitterCoordinate(lon, lat, radius) {
+function randomOffset(radius) {
   const angle = Math.random() * 2 * Math.PI;
   const r = Math.random() * radius;
-  return [lon + r * Math.cos(angle), lat + r * Math.sin(angle)];
+  return { dx: r * Math.cos(angle), dy: r * Math.sin(angle) };
 }
 
-export default function DuckDailyPresence() {
+export default function Duckmapfunction() {
   const [allData, setAllData] = useState([]);
   const [timeSteps, setTimeSteps] = useState([]);
   const [currentTimeIndex, setCurrentTimeIndex] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
+  //NOAA tooltip consts
+  const [hoverInfo, setHoverInfo] = useState(null);
+  const [tooltipData, setTooltipData] = useState(null);
   const deckRef = useRef(null);
+  const stableJitterMap = useRef(new Map());
 
+  //stores jitter positons so that it stays constant when hovering
+  function getJitteredPositions(rowKey, lon, lat, count, radius) {
+
+    if (!stableJitterMap.current.has(rowKey)) {
+      const offsets = [];
+      for (let i = 0; i < count; i++) {
+        offsets.push(randomOffset(radius));
+      }
+      stableJitterMap.current.set(rowKey, offsets);
+    }
+    const storedOffsets = stableJitterMap.current.get(rowKey);
+    return storedOffsets.map((offset) => [lon + offset.dx, lat + offset.dy]);
+  }
+  //Load CSV data
   useEffect(() => {
     let isMounted = true;
-
-    fetch(`${process.env.PUBLIC_URL}/WaterdowlData1.csv`)      .then((res) => res.text())
+    fetch(`${process.env.PUBLIC_URL}/WaterdowlData1.csv`)
+      .then((res) => res.text())
       .then((csvText) => {
-        if (!isMounted) return;
 
+        if (!isMounted) return;
         const lines = csvText.trim().split("\n");
         const header = lines[0].split(",");
         const timeIndex = header.indexOf("timestamp");
         const duckIdIndex = header.indexOf("duck_id");
         const latIndex = header.indexOf("lat");
         const lonIndex = header.indexOf("lon");
-
-        // Parse CSV
         const parsedData = lines.slice(1).map((row) => {
           const cols = row.split(",");
           return {
-            timestamp: cols[timeIndex], // "2/1/2025 12:00:00 AM"
+            timestamp: cols[timeIndex], //"2/1/2025 12:00:00 AM start date"
             duckId: cols[duckIdIndex],
             lat: parseFloat(cols[latIndex]),
             lon: parseFloat(cols[lonIndex]),
           };
         });
+
         setAllData(parsedData);
-
-        let uniqueTimes = Array.from(new Set(parsedData.map((d) => d.timestamp)));
-        uniqueTimes.sort((a, b) => new Date(a) - new Date(b));
-
+        //Sort timestamps
+        const uniqueTimes = Array.from(
+          new Set(parsedData.map((d) => d.timestamp))
+        ).sort((a, b) => new Date(a) - new Date(b));
         setTimeSteps(uniqueTimes);
       })
-      .catch((err) => console.error("Error fetching CSV:", err));
-
+      .catch((err) => console.error("Error with CSV:", err));
     return () => {
       isMounted = false;
     };
   }, []);
 
+  //Moves the time stamp when plays pressed
   useEffect(() => {
     let timerId;
     if (isPlaying && timeSteps.length > 0) {
@@ -83,7 +92,6 @@ export default function DuckDailyPresence() {
         );
       }, 1000);
     }
-
     return () => {
       if (timerId) clearInterval(timerId);
     };
@@ -91,8 +99,8 @@ export default function DuckDailyPresence() {
 
   const currentTime = timeSteps[currentTimeIndex] || null;
   const dataAtTime = allData.filter((d) => d.timestamp === currentTime);
-
-  const nextTime = timeSteps[currentTimeIndex + 1] || null;
+  const nextIndex = currentTimeIndex < timeSteps.length - 1 ? currentTimeIndex + 1 : currentTimeIndex;
+  const nextTime = timeSteps[nextIndex] || null;
   const dataNextTime = allData.filter((d) => d.timestamp === nextTime);
 
   function isLeavingDuck(d) {
@@ -104,35 +112,34 @@ export default function DuckDailyPresence() {
         nd.lon === d.lon
     );
   }
-
   const leavingData = dataAtTime.filter(isLeavingDuck);
-  const nextTimeData = dataNextTime;
-  const jitterCount = 20; //Adjust to add more dots
-  const jitterRadius = .30; //Adjust to add more scatter to the dots 
+  //Stable jitters
+  const jitterCount = 20;
+  const jitterRadius = 0.3;
+  const jitteredLeaving = useMemo(() => {
+    return leavingData.flatMap((d) => {
 
-  const jitteredLeaving = leavingData.flatMap((d) => {
-    const arr = [];
-    for (let i = 0; i < jitterCount; i++) {
-      arr.push({
+      const rowKey = `leaving-${d.duckId}-${d.lon}-${d.lat}-${d.timestamp}`;
+      const positions = getJitteredPositions(rowKey, d.lon, d.lat, jitterCount, jitterRadius);
+      return positions.map((pos) => ({
         ...d,
-        jitteredPosition: jitterCoordinate(d.lon, d.lat, jitterRadius),
-      });
-    }
-    return arr;
-  });
+        jitteredPosition: pos,
+      }));
+    });
+  }, [leavingData]);
 
-  const jitteredNextTime = nextTimeData.flatMap((d) => {
-    const arr = [];
-    for (let i = 0; i < jitterCount; i++) {
-      arr.push({
+  const jitteredNextTime = useMemo(() => {
+    return dataNextTime.flatMap((d) => {
+      const rowKey = `next-${d.duckId}-${d.lon}-${d.lat}-${d.timestamp}`;
+      const positions = getJitteredPositions(rowKey, d.lon, d.lat, jitterCount, jitterRadius);
+      return positions.map((pos) => ({
         ...d,
-        jitteredPosition: jitterCoordinate(d.lon, d.lat, jitterRadius),
-      });
-    }
-    return arr;
-  });
+        jitteredPosition: pos,
+      }));
+    });
+  }, [dataNextTime]);
 
-  // OSM 
+  // TileLayer for background map
   const tileLayer = new TileLayer({
     id: "osm-tiles",
     data: "https://a.tile.openstreetmap.org/{z}/{x}/{y}.png",
@@ -151,7 +158,7 @@ export default function DuckDailyPresence() {
     },
   });
 
-  // Scatterplot Layer for leaving ducks (blue).
+  // Blue scatter jitter plots for leaving ducks
   const leavingScatterLayer = new ScatterplotLayer({
     id: "leaving-scatter-layer",
     data: jitteredLeaving,
@@ -160,9 +167,13 @@ export default function DuckDailyPresence() {
     getFillColor: () => [0, 0, 255, 150],
     radiusMinPixels: 2,
     radiusMaxPixels: 2,
+    //hover enabled
+    onHover: (info) => {
+      setHoverInfo(info);
+    },
   });
 
-  // Scatterplot Layer for next time ducks (orange).
+  // Orange scatter jitter layer with a statc so it doesn't move
   const nextTimeScatterLayer = new ScatterplotLayer({
     id: "nexttime-scatter-layer",
     data: jitteredNextTime,
@@ -171,10 +182,60 @@ export default function DuckDailyPresence() {
     getFillColor: () => [255, 165, 0, 150],
     radiusMinPixels: 2,
     radiusMaxPixels: 2,
+    //hover enabled
+    onHover: (info) => {
+      setHoverInfo(info);
+    },
   });
 
-  //Layer stack for the different points
   const layers = [tileLayer, leavingScatterLayer, nextTimeScatterLayer];
+  useEffect(() => {
+    if (hoverInfo && hoverInfo.object) {
+
+      const hoveredObj = hoverInfo.object;
+      const [lon, lat] = hoveredObj.jitteredPosition
+        ? hoveredObj.jitteredPosition
+        : [hoveredObj.lon, hoveredObj.lat];
+
+      const pointsUrl = `https://api.weather.gov/points/${lat},${lon}`;
+      fetch(pointsUrl)
+        .then((res) => {
+          if (!res.ok) {
+            throw new Error(`NOAA points fetch error: ${res.status}`);
+          }
+          return res.json();
+        })
+        .then((pointData) => {
+          if (!pointData.properties || !pointData.properties.forecast) {
+            throw new Error("No weather found for this location/time.");
+          }
+          // NOAA URL
+          return fetch(pointData.properties.forecast);
+        })
+        .then((res) => res.json())
+        .then((forecastData) => {
+          if (!forecastData.properties || !forecastData.properties.periods) {
+            throw new Error("No forecast periods found.");
+          }
+    
+          const period = forecastData.properties.periods[0];
+          setTooltipData({
+            // Show NOAA forecast details
+            temperature: period.temperature,
+            temperatureUnit: period.temperatureUnit,
+            windSpeed: period.windSpeed,
+            windDirection: period.windDirection,
+            shortForecast: period.shortForecast,
+          });
+        })
+        .catch((err) => {
+          console.error("Error grabbing NOAA data:", err);
+          setTooltipData(null);
+        });
+    } else {
+      setTooltipData(null);
+    }
+  }, [hoverInfo]);
 
   return (
     <div style={{ position: "relative", width: "100%", height: "100%" }}>
@@ -185,6 +246,36 @@ export default function DuckDailyPresence() {
         layers={layers}
         style={{ width: "100%", height: "100%" }}
       />
+
+      {hoverInfo && hoverInfo.x !== undefined && hoverInfo.y !== undefined && tooltipData && (
+        <div
+          style={{
+            position: "absolute",
+            zIndex: 1000,
+            pointerEvents: "none",
+            left: hoverInfo.x,
+            top: hoverInfo.y,
+            background: "rgba(255,255,255,0.9)",
+            padding: "8px",
+            borderRadius: "4px",
+            transform: "translate(10px, 10px)",
+            fontSize: "12px",
+            maxWidth: "220px",
+          }}
+        >
+          <div style={{ fontWeight: "bold", marginBottom: "4px" }}>NOAA Forecast</div>
+          <div>{tooltipData.name}</div>
+          <div>
+            Temp: {tooltipData.temperature}°{tooltipData.temperatureUnit}
+          </div>
+          <div>
+            Wind: {tooltipData.windSpeed} {tooltipData.windDirection}
+          </div>
+          <div>{tooltipData.shortForecast}</div>
+        </div>
+      )}
+
+      {/* Slider & Controls */}
       <div
         style={{
           position: "absolute",
@@ -196,7 +287,6 @@ export default function DuckDailyPresence() {
           borderRadius: "8px",
           zIndex: 999,
         }}
-        //These are the slider settings
       >
         <Slider
           min={0}
