@@ -11,7 +11,7 @@
 import React, { useState, useEffect, useRef, useMemo } from "react";
 import { DeckGL } from "@deck.gl/react";
 import { TileLayer } from "@deck.gl/geo-layers";
-import { BitmapLayer } from "@deck.gl/layers";
+import { BitmapLayer, ArcLayer, IconLayer } from "@deck.gl/layers";
 import { HeatmapLayer } from "@deck.gl/aggregation-layers";
 import { Slider } from "@mui/material";
 
@@ -30,10 +30,8 @@ export default function Duckmapfunction() {
   const [timeSteps, setTimeSteps] = useState([]);
   const [currentTimeIndex, setCurrentTimeIndex] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
-
   const [hoverInfo, setHoverInfo] = useState(null);
   const [tooltipData, setTooltipData] = useState(null);
-
   const deckRef = useRef(null);
 
   //Fetch CSV data
@@ -49,19 +47,20 @@ export default function Duckmapfunction() {
         const duckIdIndex = header.indexOf("duck_id");
         const latIndex = header.indexOf("lat");
         const lonIndex = header.indexOf("lon");
+        const speciesIndex = header.indexOf("species");
 
         const parsedData = lines.slice(1).map((row) => {
           const cols = row.split(",");
           return {
-            timestamp: cols[timeIndex], // e.g. "2025-02-01 12:00:00 AM"
+            timestamp: cols[timeIndex],
             duckId: cols[duckIdIndex],
             lat: parseFloat(cols[latIndex]),
             lon: parseFloat(cols[lonIndex]),
-            species: cols[header.indexOf("species")] || "unknown",
+            species: speciesIndex !== -1 ? cols[speciesIndex] : "unknown",
           };
         });
         setAllData(parsedData);
-
+        
         // Extract unique timestamps and sort them
         const uniqueTimes = Array.from(
           new Set(parsedData.map((d) => d.timestamp))
@@ -74,7 +73,6 @@ export default function Duckmapfunction() {
       isMounted = false;
     };
   }, []);
-
   // Time slider
   useEffect(() => {
     let timerId;
@@ -92,20 +90,40 @@ export default function Duckmapfunction() {
   const dataAtTime = allData.filter((d) => d.timestamp === currentTime);
 
   const nextIndex =
-    currentTimeIndex < timeSteps.length - 1 ? currentTimeIndex + 1 : currentTimeIndex;
+    currentTimeIndex < timeSteps.length - 1
+      ? currentTimeIndex + 1
+      : currentTimeIndex;
   const nextTime = timeSteps[nextIndex] || null;
   const dataNextTime = allData.filter((d) => d.timestamp === nextTime);
 
-  function isLeavingDuck(d) {
-    if (!nextTime) return true;
-    return !dataNextTime.some(
-      (nd) => nd.duckId === d.duckId && nd.lat === d.lat && nd.lon === d.lon
-    );
+  //Arrow function center
+  function getCentroid(points) {
+    if (!points.length) return null;
+    let sumLat = 0;
+    let sumLon = 0;
+    for (const p of points) {
+      sumLat += p.lat;
+      sumLon += p.lon;
+    }
+    const avgLat = sumLat / points.length;
+    const avgLon = sumLon / points.length;
+    return { lat: avgLat, lon: avgLon };
   }
-  //The "leaving" ducks at this time
-  const leavingData = dataAtTime.filter(isLeavingDuck);
 
-  //TileLayer for the base map
+  const centroidT = useMemo(() => getCentroid(dataAtTime), [dataAtTime]);
+  const centroidT1 = useMemo(() => getCentroid(dataNextTime), [dataNextTime]);
+
+  const arcsData = useMemo(() => {
+    if (!centroidT || !centroidT1) return [];
+    return [
+      {
+        source: [centroidT.lon, centroidT.lat],
+        target: [centroidT1.lon, centroidT1.lat],
+      },
+    ];
+  }, [centroidT, centroidT1]);
+
+  // Base map
   const tileLayer = new TileLayer({
     id: "osm-tiles",
     data: "https://a.tile.openstreetmap.org/{z}/{x}/{y}.png",
@@ -126,21 +144,21 @@ export default function Duckmapfunction() {
 
   //Heatmap layer for "leaving" ducks 
   const leavingHeatmap = new HeatmapLayer({
-    id: "leaving-heatmap",
-    data: leavingData,
+    id: "heatmap-dayT",
+    data: dataAtTime,
     getPosition: (d) => [d.lon, d.lat],
     getWeight: 1,
     radiusPixels: 40,
     intensity: 1,
     threshold: 0.05,
+    opacity: 0.4,
     colorRange: [
-      
-      [242, 240, 247],
-      [218, 218, 235],
-      [188, 189, 220],
-      [158, 154, 200],
-      [117, 107, 177],
-      [84, 39, 143]   
+      [242, 240, 247, 40],
+      [218, 218, 235, 90],
+      [188, 189, 220, 120],
+      [158, 154, 200, 150],
+      [117, 107, 177, 180],
+      [84, 39, 143, 200],
     ],
     pickable: true,
     onHover: (info) => setHoverInfo(info),
@@ -148,28 +166,72 @@ export default function Duckmapfunction() {
 
   //Heatmap layer for "next day" ducks
   const nextDayHeatmap = new HeatmapLayer({
-    id: "nextday-heatmap",
+    id: "heatmap-dayT1",
     data: dataNextTime,
     getPosition: (d) => [d.lon, d.lat],
     getWeight: 1,
     radiusPixels: 40,
     intensity: 1,
     threshold: 0.05,
+    opacity: 0.4,
     colorRange: [
-      [254, 229, 217],
-      [252, 187, 161],
-      [252, 146, 114],
-      [251, 106, 74],
-      [222, 45, 38],
-      [165, 15, 21] 
+      [254, 229, 217, 40],
+      [252, 187, 161, 80],
+      [252, 146, 114, 120],
+      [251, 106, 74, 150],
+      [222, 45, 38, 180],
+      [165, 15, 21, 200],
     ],
     pickable: true,
     onHover: (info) => setHoverInfo(info),
   });
 
-  const layers = [tileLayer, leavingHeatmap, nextDayHeatmap];
+    const movementArc = new ArcLayer({
+    id: "movement-arc",
+    data: arcsData,
+    getSourcePosition: (d) => d.source,
+    getTargetPosition: (d) => d.target,
+    getSourceColor: [60, 60, 60],
+    getTargetColor: [200, 200, 200],
+    getWidth: 4,
+    greatCircle: false,
+    pickable: true,
+    onHover: (info) => setHoverInfo(info),
+  });
 
-  //NOAA tooltip 
+  // Single arrow icon at centroid
+  const iconAtlas = `${process.env.PUBLIC_URL}/arrow.png`;
+  const iconMapping = {
+    arrow: { x: 0, y: 0, width: 512, height: 512, mask: true },
+  };
+
+  const arrowLayer = new IconLayer({
+    id: "arrow-icon",
+    data: arcsData,
+    iconAtlas,
+    iconMapping,
+    getIcon: () => "arrow",
+    getSize: 40,
+    getPosition: (d) => d.target,
+    getAngle: (d) => {
+      const [lon1, lat1] = d.source;
+      const [lon2, lat2] = d.target;
+      const dx = lon2 - lon1;
+      const dy = lat2 - lat1;
+      return (Math.atan2(dy, dx) * 180) / Math.PI;
+    },
+    pickable: true,
+    onHover: (info) => setHoverInfo(info),
+  });
+
+  const layers = [
+    tileLayer,
+    leavingHeatmap,
+    nextDayHeatmap,
+    movementArc,
+    arrowLayer,
+  ];
+
   useEffect(() => {
     if (hoverInfo && hoverInfo.coordinate) {
       const [lon, lat] = hoverInfo.coordinate;

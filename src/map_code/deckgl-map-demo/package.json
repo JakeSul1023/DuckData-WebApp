@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "dependencies": {
-    "@deck.gl/aggregation-layers": "^9.1.1",
+    "@deck.gl/aggregation-layers": "^9.1.8",
     "@deck.gl/core": "^9.1.1",
     "@deck.gl/geo-layers": "^9.1.1",
     "@deck.gl/react": "^9.1.1",
@@ -44,7 +44,6 @@
     ]
   },
   "homepage": "https://JakeSul1023.github.io/DuckData-WebApp",
-  
   "devDependencies": {
     "gh-pages": "^6.3.0"
   }
