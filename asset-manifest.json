@@ -1,0 +1,12 @@
+{
+  "files": {
+    "main.css": "/DuckData-WebApp/static/css/main.3df8939e.css",
+    "main.js": "/DuckData-WebApp/static/js/main.41d87a37.js",
+    "static/js/685.c4d4db6c.chunk.js": "/DuckData-WebApp/static/js/685.c4d4db6c.chunk.js",
+    "index.html": "/DuckData-WebApp/index.html"
+  },
+  "entrypoints": [
+    "static/css/main.3df8939e.css",
+    "static/js/main.41d87a37.js"
+  ]
+}
